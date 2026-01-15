@@ -1,0 +1,44 @@
+{
+  "name": "hardhat-smartcontract-lottery-fcc",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "test": "hardhat test",
+    "test:unit": "hardhat test test/Raffle.test.js",
+    "test:integration": "hardhat test test/Raffle.integration.test.js",
+    "test:all": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js",
+    "deploy:localhost": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "deploy:mainnet": "hardhat run scripts/deploy.js --network mainnet",
+    "verify:deployment": "hardhat run scripts/verify.js",
+    "typechain": "typechain --target ethers-v6 --out-dir typechain-types './artifacts/contracts/**/*.json'",
+    "clean": "hardhat clean",
+    "node": "hardhat node"
+  },
+  "dependencies": {
+    "hardhat": "^3.1.4"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@chainlink/contracts": "^1.5.0",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.1.0",
+    "@nomicfoundation/hardhat-ethers": "^4.0.4",
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@typechain/ethers-v6": "^0.5.1",
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.19.6",
+    "chai": "^6.2.2",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.16.0",
+    "hardhat-deploy": "^1.0.4",
+    "mocha": "^11.7.5",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typechain": "^8.3.2",
+    "typescript": "~5.8.0"
+  }
+}
