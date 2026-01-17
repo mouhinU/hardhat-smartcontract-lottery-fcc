@@ -23,6 +23,9 @@
 .env.local
 .env.*.local
 
+/types
+/typechain-types
+
 # Deployments
 /deployments
 
@@ -32,3 +35,6 @@
 *.swp
 *.swo
 *~
+
+
+/typechain-types/
