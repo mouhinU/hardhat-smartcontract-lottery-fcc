@@ -45,6 +45,8 @@
         "ethers": "^6.16.0",
         "hardhat-deploy": "^1.0.4",
         "mocha": "^11.7.5",
+        "prettier": "^3.8.0",
+        "prettier-plugin-solidity": "^2.2.1",
         "ts-node": "^10.9.2",
         "tsx": "^4.21.0",
         "typechain": "^8.3.2",

@@ -105,9 +105,9 @@ contract Raffle is VRFConsumerBaseV2Plus, AutomationCompatibleInterface {
         // We don't use the checkData in this example. The checkData is defined when the Upkeep was registered.
     }
 
-    function performUpkeep(bytes calldata /* performData */) external override {
+    function performUpkeep(bytes calldata performData) external override {
         // needCheck
-        (bool upkeepNeeded, ) = this.checkUpkeep("");
+        (bool upkeepNeeded, ) = this.checkUpkeep(performData);
         // require(upkeepNeeded, "Upkeep not needed");
         if (!upkeepNeeded) {
             revert Raffle__UpkeepNotNeeded(address(this).balance, s_players.length, uint256(s_raffleState));
