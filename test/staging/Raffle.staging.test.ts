@@ -1,114 +1,132 @@
-import { expect } from "chai"
+import { expect, assert } from "chai"
 import hre from "hardhat"
-const { ethers, networkHelpers, networkName, networkConfig } = await hre.network.connect()
+const { ethers, networkName, networkConfig } = await hre.network.connect()
+import { networkConfigs, developmentChains } from "../../helper-hardhat-config.js"
 
-import { networkConfigs, developmentChains, CONFIRMATIONS } from "../../helper-hardhat-config.js"
+const RAFFLE_CONTRACT_ADDRESS = process.env.RAFFLE_CONTRACT_ADDRESS || ""
+console.log(`RAFFLE_CONTRACT_ADDRESS : ${RAFFLE_CONTRACT_ADDRESS}`)
 
 developmentChains.includes(networkName)
-    ? describe.skip
-    : describe("Raffle Staging Tests", async function () {
-          console.log("Raffle Staging Tests...")
-          let accounts: any
-          let vrfCoordinatorV2_5Mock: any
-          let raffle: any
-          const INTERVAL = 30n
-          const FUND_AMOUNT = "1000000000000000000000"
+  ? describe.skip
+  : describe("Raffle Staging Tests", async function () {
+      console.log("Raffle Staging Tests...")
 
-          async function deployVRFMockFixture() {
-              let vrfCoordinatorV2Address
-              let subscriptionId
-              let chainId = networkConfig.chainId
+      this.timeout(3000000) // 5 minutes
+      const INTERVAL = 30n
+      const FUND_AMOUNT = "1000000000000000000000"
 
-              console.log(`networkName :${networkName} ,chainId:${chainId}`)
-              // 本地开发环境
-              console.log(`developmentChains:${developmentChains}`)
-              if (developmentChains.includes(networkName)) {
-                  console.log(`1`)
-                  vrfCoordinatorV2_5Mock = await ethers.deployContract("VRFCoordinatorV2_5Mock", [
-                      ethers.parseEther("0.01"), // 基础费用: 0.01 ETH
-                      ethers.parseUnits("10", "gwei"), // Gas价格: 10 Gwei
-                      ethers.parseEther("1"), // 1 LINK = 1 ETH
-                  ])
-                  console.log(`2`)
-                  await vrfCoordinatorV2_5Mock.waitForDeployment()
-                  // ethers.js v6: 使用 logs 而不是 events
-                  const txResponse = await vrfCoordinatorV2_5Mock.createSubscription()
-                  await txResponse.wait()
-                  const deploymentBlockNumber = await ethers.provider.getBlockNumber()
-                  const events = await vrfCoordinatorV2_5Mock.queryFilter(
-                      vrfCoordinatorV2_5Mock.filters.SubscriptionCreated(),
-                      deploymentBlockNumber,
-                      "latest"
-                  )
-                  console.info(events)
+      let raffle: any
+      let chainId = networkConfig.chainId
+      let raffleEntranceFee: any
+      let networkName: any
+      let interval: any
 
-                  subscriptionId = BigInt(events[0].args[0])
-                  console.log(`subscriptionId: ${subscriptionId}`)
-                  // Fund the subscription
-                  await vrfCoordinatorV2_5Mock.fundSubscription(subscriptionId, FUND_AMOUNT)
+      beforeEach(async function () {
+        console.log(`networkName :${networkName} ,chainId:${chainId}`)
+        // 本地开发环境
+        console.log(`developmentChains: ${developmentChains}`)
+        const [deployer] = await ethers.getSigners()
+        console.log(`Using account: ${deployer.address}`)
+        // 获取 Raffle 抽奖的入场费
+        raffleEntranceFee = await networkConfigs[chainId!]["raffleEntranceFee"]
+        console.log(`Raffle Entrance Fee : ${raffleEntranceFee}`)
 
-                  vrfCoordinatorV2Address = vrfCoordinatorV2_5Mock.target
-                  console.log("vrfCoordinatorV2Address", vrfCoordinatorV2Address)
-                  console.log(`5`)
-              } else {
-                  vrfCoordinatorV2Address = networkConfigs[chainId!]["vrfCoordinatorV2"]
-                  subscriptionId = networkConfigs[chainId!]["subscriptionId"]
-              }
-              console.log(`vrfMockAddress :${vrfCoordinatorV2_5Mock.target}`)
-              // 基于网络判断获取 vrfCoordinatorV2Address、 subscriptionId
+        // 获取 Raffle 合约实例
+        const RaffleFactory = await ethers.getContractFactory("Raffle", deployer)
+        // 连接到已部署的 Raffle 合约
+        raffle = RaffleFactory.attach(RAFFLE_CONTRACT_ADDRESS)
 
-              const raffleArgs = [
-                  vrfCoordinatorV2Address,
-                  networkConfigs[chainId!]["raffleEntranceFee"],
-                  networkConfigs[chainId!]["gasLane"],
-                  networkConfigs[chainId!]["keepersUpdateInterval"],
-                  subscriptionId,
-                  networkConfigs[chainId!]["callbackGasLimit"],
-              ]
-              console.log(`raffleArgs :${raffleArgs}`)
-              raffle = await ethers.deployContract("Raffle", raffleArgs)
-              await raffle.waitForDeployment()
-              console.log(raffle)
-              return { vrfCoordinatorV2_5Mock, raffle }
-          }
+        console.log(`Raffle address : `, raffle)
+        console.log("\n=== Contract Information ===")
+        console.log(`State: ${await raffle.getRaffleState()}`)
+        console.log(`Entrance Fee: ${ethers.formatEther(await raffle.getEntranceFee())} ETH`)
+        console.log(`Interval: ${await raffle.getInterval()} seconds`)
+        console.log(`Last Timestamp: ${await raffle.getLastTimeStamp()}`)
+        console.log(`Number of Players: ${await raffle.getNumberOfPlayers()}`)
 
-          describe("Raffle Entry Tests", async function () {
-              it("Should allow players to enter the raffle", async function () {
-                  console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-                  console.log("Should allow players to enter the raffle")
-                  const { vrfCoordinatorV2_5Mock, raffle } = await networkHelpers.loadFixture(deployVRFMockFixture)
-                  console.log(`vrfMock Address :${vrfCoordinatorV2_5Mock.target}`)
-                  console.log(`raffle Address :${raffle.target}`)
-
-                  const [defaultSigner, deployer] = await ethers.getSigners()
-                  console.log(`defaultSigner.address :${defaultSigner.address}`)
-                  console.log(`deployer.address : ${deployer.address}`)
-
-                  console.log("==========================================================")
-              })
-
-              // it("Should fail if entrance fee is not enough", async function () {
-              //   console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-              //   console.log("Should fail if entrance fee is not enough")
-              //   console.log(`vrfMock Address :${vrfCoordinatorV2_5Mock.target}`)
-
-              //   console.log("==========================================================")
-              // })
-
-              // it("Should emit RaffleEnter event when player enters", async function () {
-              //   console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-              //   console.log("Should emit RaffleEnter event when player enters")
-              //   console.log(`vrfMock Address :${vrfCoordinatorV2_5Mock.target}`)
-
-              //   console.log("==========================================================")
-              // })
-
-              // it("Should increase the number of players", async function () {
-              //   console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-              //   console.log("Should increase the number of players")
-              //   console.log(`vrfMock Address :${vrfCoordinatorV2_5Mock.target}`)
-
-              //   console.log("==========================================================")
-              // })
-          })
+        try {
+          // 获取最近的获胜者
+          const recentWinner = await raffle.getRecentWinner()
+          console.log(`Recent Winner: ${recentWinner}`)
+        } catch (e) {
+          console.log(`Recent Winner: None yet`)
+        }
+        // 获取合约的账户余额
+        const initialContractBalance = await ethers.provider.getBalance(raffle.target)
+        console.log(`Initial Contract balance: ${initialContractBalance}`)
       })
+
+      // async function deployVRFMockFixture() {}
+
+      describe("fulfillRandomWords", function () {
+        it("works with live Chainlink Keepers and Chainlink VRF, we get a random winner", async function () {
+          // enter the raffle
+          console.log("Setting up test...")
+          const startingTimeStamp = await raffle.getLastTimeStamp()
+          const accounts = await ethers.getSigners()
+          console.log("Setting up Listener...")
+          await new Promise<void>(async (resolve, reject) => {
+            // setup listener before we enter the raffle
+            // Just in case the blockchain moves REALLY fast
+            raffle.once("WinnerPicked", async () => {
+              console.log("WinnerPicked event fired!")
+              try {
+                // add our asserts here
+                const recentWinner = await raffle.getRecentWinner()
+                const raffleState = await raffle.getRaffleState()
+
+                const winnerEndingBalance = await ethers.provider.getBalance(recentWinner)
+                const endingTimeStamp = await raffle.getLastTimeStamp()
+
+                console.log(`Recent Winner : ${recentWinner}`)
+                console.log(`Raffle State : ${raffleState}`)
+                console.log(`Winner Ending Balance : ${winnerEndingBalance}`)
+                console.log(`Ending TimeStamp : ${endingTimeStamp}`)
+                console.log(`Starting TimeStamp : ${startingTimeStamp}`)
+                // assert.equal(recentWinner.toString(), accounts[0].address)
+                assert(endingTimeStamp > startingTimeStamp)
+                assert.equal(raffleState, 0)
+                assert.equal(winnerEndingBalance, winnerStartingBalance + raffleEntranceFee)
+                resolve()
+              } catch (error) {
+                console.log(error)
+                reject(error)
+              }
+            })
+            let winnerStartingBalance: any
+            // Then entering the raffle
+            const [deployer, player] = await ethers.getSigners()
+
+            try {
+              console.log("Entering Raffle...")
+              const [defaultSigner, deployer] = await ethers.getSigners()
+              console.log("Default Signer:", defaultSigner.address)
+              const initialAccountBalance = await ethers.provider.getBalance(defaultSigner.address)
+              console.log(`Initial Account Balance : ${initialAccountBalance}`)
+              // 参与抽奖
+              const tx = await raffle.enterRaffle({ value: raffleEntranceFee })
+              console.log(tx)
+              const txReceipt = await tx.wait(1)
+              console.log(txReceipt)
+              console.log("Ok, time to wait...")
+
+              const contractBalance = await ethers.provider.getBalance(raffle.target)
+              console.log(`Raffle Contract balance: ${contractBalance}`)
+
+              winnerStartingBalance = await ethers.provider.getBalance(defaultSigner.address)
+              console.log(`Winner Starting Balance : ${winnerStartingBalance}`)
+              // 日志输出,等待监听器完成
+              console.log("Waiting for WinnerPicked event...")
+            } catch (error: any) {
+              console.error("Error entering raffle: ", error)
+              // 可以进一步解析错误信息
+              if (error.data) {
+                console.log("Error data: ", error.data)
+              }
+              throw error
+            }
+            // and this code WONT complete until our listener has finished listening!
+          })
+        })
+      })
+    })

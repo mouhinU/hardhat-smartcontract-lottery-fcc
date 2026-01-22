@@ -160,7 +160,7 @@ export default defineConfig({
   etherscan: {
     /* ... */
   },
-});
+})
 ```
 
 ### 2. 增强的部署脚本
@@ -252,6 +252,6 @@ MIT
 ## 参考资源
 
 - [Hardhat 文档](https://hardhat.org)
-- [Chainlink VRF 文档](https://docs.chain.link/docs/vrf)
-- [Chainlink Automation 文档](https://docs.chain.link/docs/automation/introduction)
+- [Chainlink VRF 文档](https://docs.chain.link/docs/chainlink-vrf)
+- [Chainlink Automation 文档](https://docs.chain.link/chainlink-automation)
 - [Ethers.js 文档](https://docs.ethers.org)
